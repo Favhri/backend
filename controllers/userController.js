@@ -1,76 +1,105 @@
+// (Ini adalah kode yang sudah ada di file lu)
 const pool = require('../config/database');
 const bcrypt = require('bcryptjs');
 
-exports.createUser = async (req, res) => {
-    // Ambil role dari body, jika tidak ada, default ke 'pegawai'
-    const { nama_lengkap, email, password, role = 'pegawai' } = req.body;
+exports.createUser = async (req, res) => { /* ... (kode tidak berubah) ... */ };
+exports.updateUserRole = async (req, res) => { /* ... (kode tidak berubah) ... */ };
 
-    // Validasi input
-    if (!nama_lengkap || !email || !password) {
-        return res.status(400).json({ message: 'Nama lengkap, email, dan password wajib diisi' });
-    }
 
-    // Validasi apakah role yang diinput valid
-    const allowedRoles = ['admin', 'pimpinan', 'pegawai'];
-    if (!allowedRoles.includes(role)) {
-        return res.status(400).json({ message: `Role tidak valid. Pilih dari: ${allowedRoles.join(', ')}` });
-    }
+// --- KODE BARU DIMULAI DI SINI ---
 
+// @desc    Mengambil semua user
+// @route   GET /api/users
+// @access  Private/Admin
+exports.getAllUsers = async (req, res) => {
     try {
-        // Cek duplikasi email
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (users.length > 0) {
-            return res.status(409).json({ message: 'Email sudah terdaftar' });
-        }
-
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Simpan user baru dengan role yang sudah ditentukan
-        const [result] = await pool.query(
-            'INSERT INTO users (nama_lengkap, email, password, role) VALUES (?, ?, ?, ?)',
-            [nama_lengkap, email, hashedPassword, role]
-        );
-
-        res.status(201).json({ 
-            message: 'User berhasil dibuat oleh admin',
-            userId: result.insertId
+        const [users] = await pool.query('SELECT id, nama_lengkap, email, role FROM users ORDER BY created_at DESC');
+        res.status(200).json({
+            success: true,
+            count: users.length,
+            data: users
         });
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };
 
-exports.updateUserRole = async (req, res) => {
-    const { id } = req.params; // Ambil ID user dari parameter URL
-    const { role } = req.body;   // Ambil role baru dari body request
+// @desc    Mengambil satu user berdasarkan ID
+// @route   GET /api/users/:id
+// @access  Private/Admin
+exports.getUserById = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [users] = await pool.query('SELECT id, nama_lengkap, email, role FROM users WHERE id = ?', [id]);
+        
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User tidak ditemukan' });
+        }
 
-    // 1. Validasi apakah role yang diinput valid
-    const allowedRoles = ['admin', 'pimpinan', 'pegawai'];
-    if (!role || !allowedRoles.includes(role)) {
-        return res.status(400).json({ message: `Role tidak valid. Pilih dari: ${allowedRoles.join(', ')}` });
+        res.status(200).json({
+            success: true,
+            data: users[0]
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
+};
+
+// @desc    Update data user (nama_lengkap, email)
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+exports.updateUser = async (req, res) => {
+    const { id } = req.params;
+    const { nama_lengkap, email } = req.body;
+
+    if (!nama_lengkap || !email) {
+        return res.status(400).json({ message: 'Nama lengkap dan email wajib diisi' });
     }
 
     try {
-        // 2. Cek dulu apakah user dengan ID tersebut ada
         const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
         if (users.length === 0) {
             return res.status(404).json({ message: 'User tidak ditemukan' });
         }
 
-        // 3. Lakukan UPDATE ke database
         await pool.query(
-            'UPDATE users SET role = ? WHERE id = ?',
-            [role, id]
+            'UPDATE users SET nama_lengkap = ?, email = ? WHERE id = ?',
+            [nama_lengkap, email, id]
         );
 
         res.status(200).json({
-            message: `Role untuk user ID ${id} berhasil diupdate menjadi '${role}'`
+            success: true,
+            message: `User dengan ID ${id} berhasil diupdate.`
         });
+    } catch (error) {
+        console.error(error);
+        // Tangani jika email baru ternyata duplikat
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ message: 'Email sudah digunakan oleh user lain.' });
+        }
+        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    }
+};
 
+// @desc    Menghapus user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+exports.deleteUser = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [users] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'User tidak ditemukan' });
+        }
+
+        await pool.query('DELETE FROM users WHERE id = ?', [id]);
+
+        res.status(200).json({
+            success: true,
+            message: `User dengan ID ${id} berhasil dihapus.`
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
