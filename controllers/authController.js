@@ -1,80 +1,130 @@
-const pool = require('../config/database');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+// src/controllers/authController.js
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const pool = require("../config/database");
 
-// Fungsi untuk Registrasi User Baru (TIDAK ADA PERUBAHAN DI SINI)
-exports.register = async (req, res) => {
-    const { nama_lengkap, email, password } = req.body;
+// src/controllers/authController.js
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
 
-    if (!nama_lengkap || !email || !password) {
-        return res.status(400).json({ message: 'Semua field wajib diisi' });
+  try {
+    console.log("Attempting login for email:", email);
+
+    const [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    
+    if (rows.length === 0) {
+      return res.status(401).json({ message: "Email tidak ditemukan" });
     }
 
-    try {
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (users.length > 0) {
-            return res.status(409).json({ message: 'Email sudah terdaftar' });
-        }
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Query INSERT tidak perlu diubah karena role sudah di-handle oleh database (DEFAULT 'user')
-        await pool.query(
-            'INSERT INTO users (nama_lengkap, email, password) VALUES (?, ?, ?)',
-            [nama_lengkap, email, hashedPassword]
-        );
-
-        res.status(201).json({ message: 'Registrasi berhasil!' });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+    const user = rows[0];
+    const validPassword = await bcrypt.compare(password, user.password);
+    
+    if (!validPassword) {
+      return res.status(401).json({ message: "Password salah" });
     }
+
+    const accessToken = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user.id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    return res.json({
+      token: accessToken,
+      user: {
+        id: user.id,
+        nama_lengkap: user.nama_lengkap,
+        email: user.email,
+        role: user.role,
+      },
+    });
+
+  } catch (err) {
+    console.error("Login error details:", err);
+    return res.status(500).json({ message: "Terjadi kesalahan server" });
+  }
 };
 
-// Fungsi untuk Login User (ADA PERUBAHAN DI SINI)
-exports.login = async (req, res) => {
-    const { email, password } = req.body;
+exports.refreshToken = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) return res.sendStatus(401);
 
-    if (!email || !password) {
-        return res.status(400).json({ message: 'Email dan password wajib diisi' });
+  try {
+    jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
+      if (err) return res.sendStatus(403);
+
+      // Get user data to include in new token
+      const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [decoded.id]);
+      const user = rows[0];
+      if (!user) return res.sendStatus(403);
+
+      const newAccessToken = jwt.sign(
+        { id: user.id, role: user.role },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" }
+      );
+
+      res.json({ token: newAccessToken });
+    });
+  } catch (err) {
+    console.error("Refresh error:", err);
+    res.status(500).json({ message: "Terjadi kesalahan server" });
+  }
+};
+
+exports.logout = async (req, res) => {
+  res.clearCookie("refreshToken", { 
+    httpOnly: true, 
+    secure: true, 
+    sameSite: "strict" 
+  });
+  res.json({ message: "Logout berhasil" });
+};
+
+exports.register = async (req, res) => {
+  const { nama_lengkap, email, password, role } = req.body;
+
+  try {
+    // Check if email already exists
+    const [existingUser] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: "Email sudah terdaftar" });
     }
 
-    try {
-        const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (users.length === 0) {
-            return res.status(401).json({ message: 'Email atau password salah' });
-        }
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-        const user = users[0];
+    // Insert new user
+    const [result] = await pool.query(
+      "INSERT INTO users (nama_lengkap, email, password, role) VALUES (?, ?, ?, ?)",
+      [nama_lengkap, email, hashedPassword, role || 'user']
+    );
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Email atau password salah' });
-        }
-
-        // --- PERUBAHAN DIMULAI DI SINI ---
-        // 4. Buat JWT Payload, sekarang kita sertakan role
-        const payload = {
-            id: user.id,
-            nama: user.nama_lengkap,
-            email: user.email,
-            role: user.role // <-- TAMBAHKAN INI
-        };
-        
-        const token = jwt.sign(payload, process.env.JWT_SECRET, {
-            expiresIn: '1h'
-        });
-        // --- PERUBAHAN SELESAI DI SINI ---
-
-        res.status(200).json({
-            message: 'Login berhasil!',
-            token: token
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Terjadi kesalahan pada server' });
-    }
+    res.status(201).json({
+      message: "Registrasi berhasil",
+      user: {
+        id: result.insertId,
+        nama_lengkap,
+        email,
+        role: role || 'user'
+      }
+    });
+  } catch (err) {
+    console.error("Register error:", err);
+    res.status(500).json({ message: "Terjadi kesalahan server" });
+  }
 };

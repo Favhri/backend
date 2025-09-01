@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+require("dotenv").config();
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const agenRoutes = require('./routes/agenRoutes');
@@ -9,7 +10,7 @@ const agenRoutes = require('./routes/agenRoutes');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+// const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors()); // Mengizinkan cross-origin requests
@@ -21,6 +22,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/agen', agenRoutes);
 
 // Jalankan Server
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server berjalan di http://localhost:${PORT}`);
 });
