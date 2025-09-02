@@ -1,6 +1,6 @@
 // src/controllers/authController.js
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const pool = require("../config/database");
 
 // src/controllers/authController.js
@@ -47,6 +47,7 @@ exports.login = async (req, res) => {
       user: {
         id: user.id,
         nama_lengkap: user.nama_lengkap,
+        NIK: user.NIK,
         email: user.email,
         role: user.role,
       },
@@ -95,23 +96,22 @@ exports.logout = async (req, res) => {
 };
 
 exports.register = async (req, res) => {
-  const { nama_lengkap, email, password, role } = req.body;
+  // 1. Ambil NIK dari body request
+  const { nama_lengkap, email, password, role, nik } = req.body;
 
   try {
-    // Check if email already exists
-    const [existingUser] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    const [existingUser] = await pool.query("SELECT * FROM users WHERE email = ? OR nik = ?", [email, nik]);
     if (existingUser.length > 0) {
-      return res.status(400).json({ message: "Email sudah terdaftar" });
+      return res.status(400).json({ message: "Email atau NIK sudah terdaftar" });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Insert new user
+    // 2. Tambahkan NIK ke query INSERT
     const [result] = await pool.query(
-      "INSERT INTO users (nama_lengkap, email, password, role) VALUES (?, ?, ?, ?)",
-      [nama_lengkap, email, hashedPassword, role || 'user']
+      "INSERT INTO users (nama_lengkap, email, password, role, nik) VALUES (?, ?, ?, ?, ?)",
+      [nama_lengkap, email, hashedPassword, role || 'user', nik]
     );
 
     res.status(201).json({
@@ -120,7 +120,8 @@ exports.register = async (req, res) => {
         id: result.insertId,
         nama_lengkap,
         email,
-        role: role || 'user'
+        role: role || 'user',
+        nik // 3. Kembalikan NIK di response
       }
     });
   } catch (err) {

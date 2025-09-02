@@ -7,10 +7,12 @@ const bcrypt = require('bcryptjs');
 // @route   POST /api/users
 // @access  Private/Admin
 exports.createUser = async (req, res) => {
-    const { nama_lengkap, email, password, role } = req.body;
+    // 1. Ambil NIK dari body request
+    const { nama_lengkap, email, password, role, nik } = req.body;
 
-    if (!nama_lengkap || !email || !password || !role) {
-        return res.status(400).json({ message: 'Semua field (nama_lengkap, email, password, role) wajib diisi' });
+    // 2. Perbarui validasi
+    if (!nama_lengkap || !email || !password || !role || !nik) {
+        return res.status(400).json({ message: 'Semua field (nama_lengkap, email, password, role, nik) wajib diisi' });
     }
 
     try {
@@ -22,15 +24,16 @@ exports.createUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        // 3. Tambahkan NIK ke query INSERT
         const [result] = await pool.query(
-            'INSERT INTO users (nama_lengkap, email, password, role) VALUES (?, ?, ?, ?)',
-            [nama_lengkap, email, hashedPassword, role]
+            'INSERT INTO users (nama_lengkap, email, password, role, nik) VALUES (?, ?, ?, ?, ?)',
+            [nama_lengkap, email, hashedPassword, role, nik]
         );
 
         res.status(201).json({
             success: true,
             message: 'User baru berhasil dibuat.',
-            data: { id: result.insertId, nama_lengkap, email, role }
+            data: { id: result.insertId, nama_lengkap, email, role, nik }
         });
 
     } catch (error) {
@@ -39,16 +42,17 @@ exports.createUser = async (req, res) => {
     }
 };
 
-
-// @desc    Update data user (nama_lengkap, email, password, role)
+// @desc    Update data user
 // @route   PUT /api/users/:id
 // @access  Private/Admin
 exports.updateUser = async (req, res) => {
     const { id } = req.params;
-    const { nama_lengkap, email, password, role } = req.body;
+    // 1. Ambil NIK dari body request
+    const { nama_lengkap, email, password, role, nik } = req.body;
 
-    if (!nama_lengkap || !email || !role) {
-        return res.status(400).json({ message: 'Nama lengkap, email, dan role wajib diisi' });
+    // 2. Perbarui validasi
+    if (!nama_lengkap || !email || !role || !nik) {
+        return res.status(400).json({ message: 'Nama lengkap, email, role, dan NIK wajib diisi' });
     }
 
     try {
@@ -63,9 +67,10 @@ exports.updateUser = async (req, res) => {
             hashedPassword = await bcrypt.hash(password, salt);
         }
 
+        // 3. Tambahkan NIK ke query UPDATE
         await pool.query(
-            'UPDATE users SET nama_lengkap = ?, email = ?, password = ?, role = ? WHERE id = ?',
-            [nama_lengkap, email, hashedPassword, role, id]
+            'UPDATE users SET nama_lengkap = ?, email = ?, password = ?, role = ?, nik = ? WHERE id = ?',
+            [nama_lengkap, email, hashedPassword, role, nik, id]
         );
 
         res.status(200).json({
@@ -75,7 +80,7 @@ exports.updateUser = async (req, res) => {
     } catch (error) {
         console.error('Error saat update user:', error);
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(409).json({ message: 'Email sudah digunakan oleh user lain.' });
+            return res.status(409).json({ message: 'Email atau NIK sudah digunakan oleh user lain.' });
         }
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
@@ -111,7 +116,7 @@ exports.updateUserRole = async (req, res) => {
 // @access  Private/Admin
 exports.getAllUsers = async (req, res) => {
     try {
-        const [users] = await pool.query('SELECT id, nama_lengkap, email, role, created_at FROM users ORDER BY created_at DESC');
+        const [users] = await pool.query('SELECT id, nama_lengkap, NIK, email, role, created_at FROM users ORDER BY created_at DESC');
         res.status(200).json({
             success: true,
             count: users.length,
@@ -129,7 +134,7 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
     const { id } = req.params;
     try {
-        const [users] = await pool.query('SELECT id, nama_lengkap, email, role FROM users WHERE id = ?', [id]);
+        const [users] = await pool.query('SELECT id, nama_lengkap, NIK, email, role FROM users WHERE id = ?', [id]);
         
         if (users.length === 0) {
             return res.status(404).json({ message: 'User tidak ditemukan' });

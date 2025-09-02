@@ -15,7 +15,7 @@ exports.protect = async (req, res, next) => {
 
             // Ambil data user dari DB berdasarkan id di token, dan sisipkan ke object req
             // Kita tidak ambil password
-            const [users] = await pool.query('SELECT id, nama_lengkap, email, role FROM users WHERE id = ?', [decoded.id]);
+            const [users] = await pool.query('SELECT id, nama_lengkap, NIK, email, role FROM users WHERE id = ?', [decoded.id]);
             req.user = users[0];
 
             next(); // Lanjut ke proses selanjutnya

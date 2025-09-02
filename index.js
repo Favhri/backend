@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require("dotenv").config();
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -13,8 +14,12 @@ const app = express();
 // const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors()); // Mengizinkan cross-origin requests
+app.use(cors({
+  origin: 'http://localhost:5173', // Alamat frontend Anda
+  credentials: true // Ini adalah kunci utamanya
+}));
 app.use(express.json()); // Mem-parsing body request JSON
+app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRoutes);
