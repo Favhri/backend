@@ -7,12 +7,12 @@ const bcrypt = require('bcryptjs');
 // @route   POST /api/users
 // @access  Private/Admin
 exports.createUser = async (req, res) => {
-    // 1. Ambil NIK dari body request
-    const { nama_lengkap, email, password, role, nik } = req.body;
+    // Menggunakan NIK (uppercase) dari body request
+    const { nama_lengkap, email, password, role, NIK } = req.body;
 
-    // 2. Perbarui validasi
-    if (!nama_lengkap || !email || !password || !role || !nik) {
-        return res.status(400).json({ message: 'Semua field (nama_lengkap, email, password, role, nik) wajib diisi' });
+    // Memperbarui validasi untuk NIK (uppercase)
+    if (!nama_lengkap || !email || !password || !role || !NIK) {
+        return res.status(400).json({ message: 'Semua field (nama_lengkap, email, password, role, NIK) wajib diisi' });
     }
 
     try {
@@ -24,16 +24,16 @@ exports.createUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // 3. Tambahkan NIK ke query INSERT
+        // Menambahkan NIK (uppercase) ke query INSERT
         const [result] = await pool.query(
-            'INSERT INTO users (nama_lengkap, email, password, role, nik) VALUES (?, ?, ?, ?, ?)',
-            [nama_lengkap, email, hashedPassword, role, nik]
+            'INSERT INTO users (nama_lengkap, email, password, role, NIK) VALUES (?, ?, ?, ?, ?)',
+            [nama_lengkap, email, hashedPassword, role, NIK]
         );
 
         res.status(201).json({
             success: true,
             message: 'User baru berhasil dibuat.',
-            data: { id: result.insertId, nama_lengkap, email, role, nik }
+            data: { id: result.insertId, nama_lengkap, email, role, NIK }
         });
 
     } catch (error) {
@@ -47,11 +47,11 @@ exports.createUser = async (req, res) => {
 // @access  Private/Admin
 exports.updateUser = async (req, res) => {
     const { id } = req.params;
-    // 1. Ambil NIK dari body request
-    const { nama_lengkap, email, password, role, nik } = req.body;
+    // Menggunakan NIK (uppercase) dari body request
+    const { nama_lengkap, email, password, role, NIK } = req.body;
 
-    // 2. Perbarui validasi
-    if (!nama_lengkap || !email || !role || !nik) {
+    // Memperbarui validasi untuk NIK (uppercase)
+    if (!nama_lengkap || !email || !role || !NIK) {
         return res.status(400).json({ message: 'Nama lengkap, email, role, dan NIK wajib diisi' });
     }
 
@@ -67,10 +67,10 @@ exports.updateUser = async (req, res) => {
             hashedPassword = await bcrypt.hash(password, salt);
         }
 
-        // 3. Tambahkan NIK ke query UPDATE
+        // Menambahkan NIK (uppercase) ke query UPDATE
         await pool.query(
-            'UPDATE users SET nama_lengkap = ?, email = ?, password = ?, role = ?, nik = ? WHERE id = ?',
-            [nama_lengkap, email, hashedPassword, role, nik, id]
+            'UPDATE users SET nama_lengkap = ?, email = ?, password = ?, role = ?, NIK = ? WHERE id = ?',
+            [nama_lengkap, email, hashedPassword, role, NIK, id]
         );
 
         res.status(200).json({
@@ -116,6 +116,7 @@ exports.updateUserRole = async (req, res) => {
 // @access  Private/Admin
 exports.getAllUsers = async (req, res) => {
     try {
+        // Menggunakan NIK (uppercase) di query SELECT
         const [users] = await pool.query('SELECT id, nama_lengkap, NIK, email, role, created_at FROM users ORDER BY created_at DESC');
         res.status(200).json({
             success: true,
@@ -134,6 +135,7 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
     const { id } = req.params;
     try {
+        // Menggunakan NIK (uppercase) di query SELECT
         const [users] = await pool.query('SELECT id, nama_lengkap, NIK, email, role FROM users WHERE id = ?', [id]);
         
         if (users.length === 0) {
