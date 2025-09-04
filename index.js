@@ -1,30 +1,36 @@
+// backend/index.js
+
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require("dotenv").config();
+
+// Import semua file rute
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const agenRoutes = require('./routes/agenRoutes');
+const cutiRoutes = require('./routes/cutiRoutes');
+const pegawaiRoutes = require('./routes/pegawaiRoutes'); // <-- 1. TAMBAHKAN IMPORT INI
 
-// Muat variabel environment
 dotenv.config();
 
 const app = express();
-// const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173', // Alamat frontend Anda
-  credentials: true // Ini adalah kunci utamanya
+  origin: 'http://localhost:5173',
+  credentials: true
 }));
-app.use(express.json()); // Mem-parsing body request JSON
+app.use(express.json());
 app.use(cookieParser());
 
-// Routes
+// Daftarkan semua rute
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/agen', agenRoutes);
+app.use('/api/cuti', cutiRoutes);
+app.use('/api/pegawai', pegawaiRoutes); // <-- 2. DAFTARKAN RUTE INI
 
 // Jalankan Server
 const PORT = process.env.PORT || 5000;

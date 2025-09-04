@@ -1,36 +1,39 @@
+// backend/middleware/authMiddleware.js
+
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database');
 
-// Middleware untuk memeriksa apakah user sudah login (punya token valid)
 exports.protect = async (req, res, next) => {
     let token;
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
-            // Ambil token dari header (Bentuknya: "Bearer <token>")
             token = req.headers.authorization.split(' ')[1];
-
-            // Verifikasi token
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Ambil data user dari DB berdasarkan id di token, dan sisipkan ke object req
-            // Kita tidak ambil password
             const [users] = await pool.query('SELECT id, nama_lengkap, NIK, email, role FROM users WHERE id = ?', [decoded.id]);
+            
+            if (users.length === 0) {
+                return res.status(401).json({ message: 'User yang terhubung dengan token ini tidak lagi ditemukan.' });
+            }
+            
             req.user = users[0];
-
-            next(); // Lanjut ke proses selanjutnya
+            next();
         } catch (error) {
-            console.error(error);
-            return res.status(401).json({ message: 'Tidak terotentikasi, token gagal' });
+            // --- PERBAIKAN DI SINI ---
+            if (error.name === 'TokenExpiredError') {
+                return res.status(401).json({ message: 'Sesi telah berakhir, token kedaluwarsa.' });
+            }
+            console.error('Token verification failed:', error);
+            return res.status(401).json({ message: 'Tidak terotentikasi, token tidak valid.' });
         }
     }
 
     if (!token) {
-        return res.status(401).json({ message: 'Tidak terotentikasi, tidak ada token' });
+        return res.status(401).json({ message: 'Tidak terotentikasi, tidak ada token.' });
     }
 };
 
-// Middleware untuk memeriksa role user
 exports.authorize = (...roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.user.role)) {
