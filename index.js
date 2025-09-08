@@ -11,7 +11,8 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const agenRoutes = require('./routes/agenRoutes');
 const cutiRoutes = require('./routes/cutiRoutes');
-const pegawaiRoutes = require('./routes/pegawaiRoutes'); // <-- 1. TAMBAHKAN IMPORT INI
+const pegawaiRoutes = require('./routes/pegawaiRoutes');
+const arsipRoutes = require('./routes/arsipRoutes'); 
 
 dotenv.config();
 
@@ -30,7 +31,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/agen', agenRoutes);
 app.use('/api/cuti', cutiRoutes);
-app.use('/api/pegawai', pegawaiRoutes); // <-- 2. DAFTARKAN RUTE INI
+app.use('/api/pegawai', pegawaiRoutes);
+app.use('/api/arsip', arsipRoutes); 
 
 // Jalankan Server
 const PORT = process.env.PORT || 5000;
