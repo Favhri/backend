@@ -1,4 +1,4 @@
-// backend/index.js
+// favhri/backend/backend-aaa26a42e2e9a370ca84fd6781c628f03a411c6b/index.js
 
 const express = require('express');
 const dotenv = require('dotenv');
@@ -12,7 +12,7 @@ const userRoutes = require('./routes/userRoutes');
 const agenRoutes = require('./routes/agenRoutes');
 const cutiRoutes = require('./routes/cutiRoutes');
 const pegawaiRoutes = require('./routes/pegawaiRoutes');
-const arsipRoutes = require('./routes/arsipRoutes'); 
+const arsipRoutes = require('./routes/arsipRoutes');
 
 dotenv.config();
 
@@ -26,13 +26,16 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Middleware untuk menyajikan file statis dari folder 'uploads'
+app.use('/uploads', express.static('uploads'));
+
 // Daftarkan semua rute
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/agen', agenRoutes);
 app.use('/api/cuti', cutiRoutes);
 app.use('/api/pegawai', pegawaiRoutes);
-app.use('/api/arsip', arsipRoutes); 
+app.use('/api/arsip', arsipRoutes);
 
 // Jalankan Server
 const PORT = process.env.PORT || 5000;

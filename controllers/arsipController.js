@@ -1,102 +1,106 @@
-// backend/controllers/arsipController.js
+// favhri/backend/backend-aaa26a42e2e9a370ca84fd6781c628f03a411c6b/controllers/arsipController.js
 
 const pool = require('../config/database');
 const multer = require('multer');
+const fs = require('fs');
 const path = require('path');
 
-// Konfigurasi penyimpanan Multer
+const uploadDir = 'uploads/';
+
+// Cek dan buat folder 'uploads' jika belum ada
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/'); // Folder 'uploads' harus ada di root backend
-  },
-  filename: function (req, file, cb) {
-    // Buat nama file unik: timestamp + nama asli
-    cb(null, Date.now() + '-' + file.originalname);
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const originalName = file.originalname.replace(/\s+/g, '-');
+    cb(null, uniqueSuffix + '-' + originalName);
   }
 });
 
 const upload = multer({ storage: storage }).single('file');
 
-// @desc    Upload dokumen baru
-// @route   POST /api/arsip/upload
-// @access  Protected
 exports.uploadDokumen = (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(500).json({ message: 'Gagal mengupload file.', error: err });
+      console.error("Multer Error:", err);
+      return res.status(500).json({ message: 'Gagal memproses upload file.', error: err });
     }
-
+    if (!req.file) {
+        return res.status(400).json({ message: 'File tidak ditemukan dalam request.' });
+    }
     const { nama_dokumen, kategori, unit_kerja } = req.body;
     const { filename, path: filePath, size } = req.file;
-    const uploader_id = req.user.id; // Ambil ID user yang login dari middleware protect
-
-    if (!nama_dokumen || !kategori || !unit_kerja || !req.file) {
-      return res.status(400).json({ message: 'Semua field wajib diisi.' });
+    const uploader_id = req.user.id;
+    if (!nama_dokumen || !kategori || !unit_kerja) {
+      return res.status(400).json({ message: 'Nama dokumen, kategori, dan unit kerja wajib diisi.' });
     }
-
     try {
-      const [result] = await pool.query(
+      await pool.query(
         'INSERT INTO arsip_dokumen (nama_dokumen, kategori, unit_kerja, uploader_id, file_path, file_size, file_name) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [nama_dokumen, kategori, unit_kerja, uploader_id, filePath, size, filename]
       );
-      res.status(201).json({
-        success: true,
-        message: 'Dokumen berhasil diupload.',
-        data: { id: result.insertId }
-      });
+      res.status(201).json({ success: true, message: 'Dokumen berhasil diupload.' });
     } catch (error) {
-      console.error('Error saat menyimpan data dokumen:', error);
-      res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+      console.error('Error saat menyimpan data dokumen ke DB:', error);
+      res.status(500).json({ message: 'Terjadi kesalahan pada server saat menyimpan data.' });
     }
   });
 };
 
-// @desc    Mengambil semua dokumen dengan filter
-// @route   GET /api/arsip
-// @access  Protected
 exports.getAllDokumen = async (req, res) => {
   try {
-    // Ambil query filter dari URL, contoh: /api/arsip?unit_kerja=UPC%20BANDAR%20BUAT
     const { unit_kerja, kategori } = req.query;
-
+    
+    // ====> INI BAGIAN YANG DIPERBAIKI <====
+    // Pastikan `a.file_name` ikut di-SELECT dalam query.
     let query = `
-      SELECT a.id, a.nama_dokumen, a.kategori, a.unit_kerja, a.file_size, a.created_at, u.nama_lengkap as uploader
+      SELECT a.id, a.nama_dokumen, a.kategori, a.unit_kerja, a.file_size, a.file_name, a.created_at, u.nama_lengkap as uploader
       FROM arsip_dokumen a
       JOIN users u ON a.uploader_id = u.id
     `;
     const params = [];
+    const conditions = [];
 
-    if (unit_kerja || kategori) {
-      query += ' WHERE';
-      if (unit_kerja) {
-        query += ' a.unit_kerja = ?';
-        params.push(unit_kerja);
-      }
-      if (kategori) {
-        if (unit_kerja) query += ' AND';
-        query += ' a.kategori = ?';
-        params.push(kategori);
-      }
+    if (unit_kerja && unit_kerja !== 'Semua') {
+      conditions.push('a.unit_kerja = ?');
+      params.push(unit_kerja);
+    }
+    if (kategori && kategori !== 'Semua') {
+      conditions.push('a.kategori = ?');
+      params.push(kategori);
     }
 
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+    
     query += ' ORDER BY a.created_at DESC';
-
+    
     const [dokumen] = await pool.query(query, params);
-    res.status(200).json({
-        success: true,
-        data: dokumen
-    });
+    res.status(200).json({ success: true, data: dokumen });
   } catch (error) {
     console.error('Error saat mengambil data dokumen:', error);
     res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
   }
 };
 
-// @desc    Menghapus dokumen
-// @route   DELETE /api/arsip/:id
-// @access  Protected/Admin
-exports.deleteDokumen = async (req, res) => {
-    // Implementasi logika hapus file dari server dan database
-    // (Bisa dikembangkan lebih lanjut)
+exports.downloadDokumen = (req, res) => {
+    const { fileName } = req.params;
+    // Ambil path absolut ke folder 'uploads'
+    const filePath = path.resolve(__dirname, '..', 'uploads', fileName);
+
+    if (fs.existsSync(filePath)) {
+        // res.download() otomatis set header Content-Disposition
+        res.download(filePath);
+    } else {
+        res.status(404).send("File tidak ditemukan.");
+    }
+};
+
+exports.deleteDokumen = (req, res) => {
     res.status(200).json({ success: true, message: 'Fitur hapus dalam pengembangan.' });
 };
