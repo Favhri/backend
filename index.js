@@ -13,6 +13,7 @@ const agenRoutes = require('./routes/agenRoutes');
 const cutiRoutes = require('./routes/cutiRoutes');
 const pegawaiRoutes = require('./routes/pegawaiRoutes');
 const arsipRoutes = require('./routes/arsipRoutes');
+const laporanRoutes = require('./routes/laporanRoutes'); // <-- PASTIKAN INI ADA
 
 dotenv.config();
 
@@ -29,13 +30,14 @@ app.use(cookieParser());
 // Middleware untuk menyajikan file statis dari folder 'uploads'
 app.use('/uploads', express.static('uploads'));
 
-// Daftarkan semua rute
+// Daftarkan semua rute API
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/agen', agenRoutes);
 app.use('/api/cuti', cutiRoutes);
 app.use('/api/pegawai', pegawaiRoutes);
 app.use('/api/arsip', arsipRoutes);
+app.use('/api/laporan', laporanRoutes); // <-- INI YANG PALING PENTING
 
 // Jalankan Server
 const PORT = process.env.PORT || 5000;
