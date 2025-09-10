@@ -13,7 +13,8 @@ const agenRoutes = require('./routes/agenRoutes');
 const cutiRoutes = require('./routes/cutiRoutes');
 const pegawaiRoutes = require('./routes/pegawaiRoutes');
 const arsipRoutes = require('./routes/arsipRoutes');
-const laporanRoutes = require('./routes/laporanRoutes'); // <-- PASTIKAN INI ADA
+const laporanRoutes = require('./routes/laporanRoutes'); 
+const kpiRoutes = require('./routes/kpiRoutes');
 
 dotenv.config();
 
@@ -37,7 +38,8 @@ app.use('/api/agen', agenRoutes);
 app.use('/api/cuti', cutiRoutes);
 app.use('/api/pegawai', pegawaiRoutes);
 app.use('/api/arsip', arsipRoutes);
-app.use('/api/laporan', laporanRoutes); // <-- INI YANG PALING PENTING
+app.use('/api/laporan', laporanRoutes); 
+app.use('/api/kpi', kpiRoutes);
 
 // Jalankan Server
 const PORT = process.env.PORT || 5000;
