@@ -7,13 +7,13 @@ const {
     getAllLaporan,
     exportLaporan
 } = require('../controllers/laporanController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware'); // authorize dihapus dari import
 
 router.route('/')
-    .get(protect, getAllLaporan)
-    .post(protect, createLaporan);
+    .get(protect, getAllLaporan) // authorize('admin') dihapus
+    .post(protect, createLaporan); // authorize('admin') dihapus
 
 router.route('/export')
-    .get(protect, exportLaporan);
+    .get(protect, exportLaporan); // Tetap admin atau sesuai kebutuhan
 
 module.exports = router;

@@ -7,12 +7,12 @@ const {
     getAllKpi,
     exportKpi
 } = require('../controllers/kpiController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware'); // authorize dihapus dari import
 
 router.route('/')
-    .get(protect, getAllKpi)
-    .post(protect, createKpi);
+    .get(protect, getAllKpi) // authorize('admin') dihapus
+    .post(protect, createKpi); // authorize('admin') dihapus
 
-    router.get('/export', protect, exportKpi);
+router.get('/export', protect, exportKpi);
 
 module.exports = router;
