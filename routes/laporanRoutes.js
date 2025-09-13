@@ -1,19 +1,27 @@
-// favhri/backend/backend-aaa26a42e2e9a370ca84fd6781c628f03a411c6b/routes/laporanRoutes.js
+// favhri/backend/backend-e3d9d5c539d6de3679e5b9734f42a8acf1ea2583/routes/laporanRoutes.js
 
 const express = require('express');
 const router = express.Router();
 const { 
     createLaporan,
     getAllLaporan,
+    updateLaporan,
+    deleteLaporan,
     exportLaporan
 } = require('../controllers/laporanController');
-const { protect } = require('../middleware/authMiddleware'); // authorize dihapus dari import
+const { protect, authorize } = require('../middleware/authMiddleware');
 
 router.route('/')
-    .get(protect, getAllLaporan) // authorize('admin') dihapus
-    .post(protect, createLaporan); // authorize('admin') dihapus
+    .get(protect, getAllLaporan)
+    .post(protect, createLaporan);
 
+router.route('/:id')
+    .put(protect, authorize('admin'), updateLaporan)
+    .delete(protect, authorize('admin'), deleteLaporan);
+
+// --- PERBAIKAN DI SINI ---
+// Sekarang 'user' juga bisa melakukan export
 router.route('/export')
-    .get(protect, exportLaporan); // Tetap admin atau sesuai kebutuhan
+    .get(protect, authorize('admin', 'user'), exportLaporan); 
 
 module.exports = router;

@@ -1,11 +1,12 @@
-// favhri/backend/backend-aaa26a42e2e9a370ca84fd6781c628f03a411c6b/controllers/laporanController.js
+// favhri/backend/backend-e3d9d5c539d6de3679e5b9734f42a8acf1ea2583/controllers/laporanController.js
 
 const pool = require('../config/database');
-const ExcelJS = require('exceljs'); // <-- Ganti xlsx dengan exceljs
+const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 
-// @desc    Membuat laporan harian baru
+// [fungsi createLaporan dan getAllLaporan tetap sama]
+
 exports.createLaporan = async (req, res) => {
     const { tanggal, unit_kerja, pencairan_gadai, pencairan_non_gadai, pencairan_emas, total_pelunasan, catatan } = req.body;
     const user_id = req.user.id;
@@ -33,7 +34,6 @@ exports.createLaporan = async (req, res) => {
     }
 };
 
-// @desc    Mengambil semua laporan harian (dengan filter)
 exports.getAllLaporan = async (req, res) => {
     try {
         const { unit_kerja, tanggal_mulai, tanggal_akhir } = req.query;
@@ -57,7 +57,49 @@ exports.getAllLaporan = async (req, res) => {
     }
 };
 
-// @desc    Export laporan ke Excel
+
+// @desc    Update laporan harian
+exports.updateLaporan = async (req, res) => {
+    const { id } = req.params;
+    const { tanggal, unit_kerja, pencairan_gadai, pencairan_non_gadai, pencairan_emas, total_pelunasan, catatan } = req.body;
+
+    if (!tanggal || !unit_kerja) {
+        return res.status(400).json({ message: 'Tanggal dan Unit Kerja wajib diisi.' });
+    }
+
+    try {
+        const [result] = await pool.query(
+            'UPDATE laporan_harian SET tanggal = ?, unit_kerja = ?, pencairan_gadai = ?, pencairan_non_gadai = ?, pencairan_emas = ?, total_pelunasan = ?, catatan = ? WHERE id = ?',
+            [tanggal, unit_kerja, pencairan_gadai || 0, pencairan_non_gadai || 0, pencairan_emas || 0, total_pelunasan || 0, catatan || null, id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Laporan tidak ditemukan.' });
+        }
+
+        res.status(200).json({ success: true, message: 'Laporan berhasil diperbarui.' });
+    } catch (error) {
+        console.error('Error saat update laporan:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+};
+
+// @desc    Menghapus laporan harian
+exports.deleteLaporan = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [result] = await pool.query('DELETE FROM laporan_harian WHERE id = ?', [id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Laporan tidak ditemukan.' });
+        }
+        res.status(200).json({ success: true, message: 'Laporan berhasil dihapus.' });
+    } catch (error) {
+        console.error('Error saat menghapus laporan:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+};
+
+// [fungsi exportLaporan tetap sama]
 exports.exportLaporan = async (req, res) => {
     try {
         const [laporan] = await pool.query(`

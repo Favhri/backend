@@ -1,11 +1,9 @@
-// favhri/backend/backend-fe66384412b0eefb2f8b3cd7d46eee060a4fa6be/controllers/kpiController.js
+// favhri/backend/backend-e3d9d5c539d6de3679e5b9734f42a8acf1ea2583/controllers/kpiController.js
 
 const pool = require('../config/database');
 const ExcelJS = require('exceljs');
 
-// @desc    Membuat data Monev KPI baru
-// @route   POST /api/kpi
-// @access  Protected
+// [fungsi createKpi dan getAllKpi tetap sama]
 exports.createKpi = async (req, res) => {
     const {
         tanggal, unit_kerja, nasabah_baru, nasabah_existing, nasabah_akun, nasabah_transaksi,
@@ -41,9 +39,6 @@ exports.createKpi = async (req, res) => {
     }
 };
 
-// @desc    Mengambil semua data Monev KPI
-// @route   GET /api/kpi
-// @access  Protected
 exports.getAllKpi = async (req, res) => {
     try {
         const query = `
@@ -60,9 +55,65 @@ exports.getAllKpi = async (req, res) => {
     }
 };
 
-// @desc    Export data Monev KPI ke Excel
-// @route   GET /api/kpi/export
-// @access  Protected
+
+// @desc    Update data Monev KPI
+exports.updateKpi = async (req, res) => {
+    const { id } = req.params;
+    const {
+        tanggal, unit_kerja, nasabah_baru, nasabah_existing, nasabah_akun, nasabah_transaksi,
+        pds_umi_corner, g24, antam, mte, deposito_emas, gte_kte, mikro,
+        disbursement, agen
+    } = req.body;
+
+    if (!tanggal || !unit_kerja) {
+        return res.status(400).json({ message: 'Tanggal dan Unit Kerja wajib diisi.' });
+    }
+
+    try {
+        const query = `
+            UPDATE monev_kpi SET 
+                tanggal = ?, unit_kerja = ?, nasabah_baru = ?, nasabah_existing = ?, nasabah_akun = ?, 
+                nasabah_transaksi = ?, pds_umi_corner = ?, g24 = ?, antam = ?, mte = ?, deposito_emas = ?, 
+                gte_kte = ?, mikro = ?, disbursement = ?, agen = ?
+            WHERE id = ?
+        `;
+        const values = [
+            tanggal, unit_kerja,
+            nasabah_baru || 0, nasabah_existing || 0, nasabah_akun || 0, nasabah_transaksi || 0,
+            pds_umi_corner || 0, g24 || 0, antam || 0, mte || 0, deposito_emas || 0,
+            gte_kte || 0, mikro || 0, disbursement || 0, agen || 0,
+            id
+        ];
+
+        const [result] = await pool.query(query, values);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Data KPI tidak ditemukan.' });
+        }
+        res.status(200).json({ success: true, message: 'Data Monev KPI berhasil diperbarui.' });
+    } catch (error) {
+        console.error('Error saat update Monev KPI:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+};
+
+// @desc    Menghapus data Monev KPI
+exports.deleteKpi = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [result] = await pool.query('DELETE FROM monev_kpi WHERE id = ?', [id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Data KPI tidak ditemukan.' });
+        }
+        res.status(200).json({ success: true, message: 'Data Monev KPI berhasil dihapus.' });
+    } catch (error) {
+        console.error('Error saat menghapus Monev KPI:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
+    }
+};
+
+
+// [fungsi exportKpi tetap sama]
 exports.exportKpi = async (req, res) => {
     try {
         const query = `
