@@ -3,7 +3,7 @@
 const pool = require('../config/database');
 const ExcelJS = require('exceljs');
 
-// [fungsi createKpi dan getAllKpi tetap sama]
+// @desc    Membuat data Monev KPI baru
 exports.createKpi = async (req, res) => {
     const {
         tanggal, unit_kerja, nasabah_baru, nasabah_existing, nasabah_akun, nasabah_transaksi,
@@ -39,6 +39,7 @@ exports.createKpi = async (req, res) => {
     }
 };
 
+// @desc    Mengambil semua data Monev KPI
 exports.getAllKpi = async (req, res) => {
     try {
         const query = `
@@ -54,7 +55,6 @@ exports.getAllKpi = async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 };
-
 
 // @desc    Update data Monev KPI
 exports.updateKpi = async (req, res) => {
@@ -112,12 +112,15 @@ exports.deleteKpi = async (req, res) => {
     }
 };
 
-
-// [fungsi exportKpi tetap sama]
+// @desc    Export data Monev KPI ke Excel
 exports.exportKpi = async (req, res) => {
     try {
+        // --- PERBAIKAN FINAL DI SINI ---
         const query = `
-            SELECT k.*, u.nama_lengkap as penginput
+            SELECT 
+                k.id, k.unit_kerja, DATE_FORMAT(k.tanggal, '%Y-%m-%d') as tanggal, k.nasabah_baru, k.nasabah_existing, k.nasabah_akun, 
+                k.nasabah_transaksi, k.pds_umi_corner, k.g24, k.antam, k.mte, k.deposito_emas, 
+                k.gte_kte, k.mikro, k.disbursement, k.agen, u.nama_lengkap as penginput
             FROM monev_kpi k
             JOIN users u ON k.user_id = u.id
             ORDER BY k.tanggal DESC, k.unit_kerja ASC
@@ -127,10 +130,9 @@ exports.exportKpi = async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Monev KPI Area');
 
-        // Define columns based on your header image
         worksheet.columns = [
             { header: 'UNIT KERJA', key: 'unit_kerja', width: 15 },
-            { header: 'TGL', key: 'tanggal', width: 12 },
+            { header: 'TGL', key: 'tanggal', width: 12, style: { numFmt: 'dd/mm/yyyy' } },
             { header: 'NASABAH BARU', key: 'nasabah_baru', width: 15 },
             { header: 'EXISTING', key: 'nasabah_existing', width: 12 },
             { header: 'AKUN', key: 'nasabah_akun', width: 10 },
@@ -147,11 +149,10 @@ exports.exportKpi = async (req, res) => {
             { header: 'PENGINPUT', key: 'penginput', width: 20 },
         ];
 
-        // Add rows with data
         kpiList.forEach(kpi => {
             worksheet.addRow({
                 unit_kerja: kpi.unit_kerja,
-                tanggal: new Date(kpi.tanggal).toLocaleDateString('id-ID'),
+                tanggal: kpi.tanggal, // Langsung menggunakan string dari database
                 nasabah_baru: kpi.nasabah_baru,
                 nasabah_existing: kpi.nasabah_existing,
                 nasabah_akun: kpi.nasabah_akun,
@@ -168,8 +169,9 @@ exports.exportKpi = async (req, res) => {
                 penginput: kpi.penginput
             });
         });
+        
+        worksheet.getRow(1).font = { bold: true };
 
-        // Set header and send file
         res.setHeader(
             'Content-Type',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

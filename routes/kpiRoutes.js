@@ -19,8 +19,6 @@ router.route('/:id')
     .put(protect, authorize('admin'), updateKpi)
     .delete(protect, authorize('admin'), deleteKpi);
 
-// --- PERBAIKAN DI SINI ---
-// Sekarang 'user' juga bisa melakukan export
 router.get('/export', protect, authorize('admin', 'user'), exportKpi);
 
 module.exports = router;

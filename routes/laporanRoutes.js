@@ -19,8 +19,6 @@ router.route('/:id')
     .put(protect, authorize('admin'), updateLaporan)
     .delete(protect, authorize('admin'), deleteLaporan);
 
-// --- PERBAIKAN DI SINI ---
-// Sekarang 'user' juga bisa melakukan export
 router.route('/export')
     .get(protect, authorize('admin', 'user'), exportLaporan); 
 

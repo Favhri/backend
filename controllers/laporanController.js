@@ -5,8 +5,7 @@ const ExcelJS = require('exceljs');
 const fs = require('fs');
 const path = require('path');
 
-// [fungsi createLaporan dan getAllLaporan tetap sama]
-
+// @desc    Membuat laporan harian baru
 exports.createLaporan = async (req, res) => {
     const { tanggal, unit_kerja, pencairan_gadai, pencairan_non_gadai, pencairan_emas, total_pelunasan, catatan } = req.body;
     const user_id = req.user.id;
@@ -34,6 +33,7 @@ exports.createLaporan = async (req, res) => {
     }
 };
 
+// @desc    Mengambil semua laporan harian (dengan filter)
 exports.getAllLaporan = async (req, res) => {
     try {
         const { unit_kerja, tanggal_mulai, tanggal_akhir } = req.query;
@@ -56,7 +56,6 @@ exports.getAllLaporan = async (req, res) => {
         res.status(500).json({ message: 'Terjadi kesalahan pada server.' });
     }
 };
-
 
 // @desc    Update laporan harian
 exports.updateLaporan = async (req, res) => {
@@ -99,11 +98,16 @@ exports.deleteLaporan = async (req, res) => {
     }
 };
 
-// [fungsi exportLaporan tetap sama]
+// @desc    Export laporan ke Excel
 exports.exportLaporan = async (req, res) => {
     try {
+        // --- PERBAIKAN FINAL DI SINI ---
+        // Menggunakan DATE_FORMAT untuk mengubah tanggal menjadi string langsung di query
         const [laporan] = await pool.query(`
-            SELECT l.tanggal, l.unit_kerja, l.pencairan_gadai, l.pencairan_non_gadai, l.pencairan_emas, l.total_pelunasan, u.nama_lengkap as penginput
+            SELECT 
+                DATE_FORMAT(l.tanggal, '%Y-%m-%d') as tanggal, 
+                l.unit_kerja, l.pencairan_gadai, l.pencairan_non_gadai, 
+                l.pencairan_emas, l.total_pelunasan, u.nama_lengkap as penginput
             FROM laporan_harian l
             JOIN users u ON l.user_id = u.id
             ORDER BY l.tanggal DESC, l.unit_kerja ASC
@@ -112,9 +116,8 @@ exports.exportLaporan = async (req, res) => {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet('Laporan Harian');
 
-        // Definisikan header kolom
         worksheet.columns = [
-            { header: 'Tanggal', key: 'tanggal', width: 15 },
+            { header: 'Tanggal', key: 'tanggal', width: 15, style: { numFmt: 'dd/mm/yyyy' } },
             { header: 'Unit Kerja', key: 'unit_kerja', width: 25 },
             { header: 'Pencairan Gadai', key: 'pencairan_gadai', width: 20, style: { numFmt: '"Rp"#,##0' } },
             { header: 'Pencairan Non Gadai', key: 'pencairan_non_gadai', width: 20, style: { numFmt: '"Rp"#,##0' } },
@@ -125,12 +128,11 @@ exports.exportLaporan = async (req, res) => {
             { header: 'Diinput Oleh', key: 'penginput', width: 25 },
         ];
         
-        // Tambahkan data ke baris
         laporan.forEach(item => {
             const total_pencairan = parseFloat(item.pencairan_gadai) + parseFloat(item.pencairan_non_gadai) + parseFloat(item.pencairan_emas);
             const delta_osl = total_pencairan - parseFloat(item.total_pelunasan);
             worksheet.addRow({
-                tanggal: new Date(item.tanggal),
+                tanggal: item.tanggal, // Langsung menggunakan string dari database
                 unit_kerja: item.unit_kerja,
                 pencairan_gadai: parseFloat(item.pencairan_gadai),
                 pencairan_non_gadai: parseFloat(item.pencairan_non_gadai),
@@ -142,7 +144,6 @@ exports.exportLaporan = async (req, res) => {
             });
         });
 
-        // Styling header
         worksheet.getRow(1).font = { bold: true };
         
         res.setHeader(
@@ -154,7 +155,6 @@ exports.exportLaporan = async (req, res) => {
             `attachment; filename=Laporan_Harian_${Date.now()}.xlsx`
         );
 
-        // Tulis workbook ke response
         await workbook.xlsx.write(res);
         res.end();
 

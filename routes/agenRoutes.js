@@ -13,7 +13,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 // Rute untuk GET semua agen dan POST agen baru
 // Endpoint: /api/agen
 router.route('/')
-    .get(protect, authorize('admin'), getAllAgen)
+    .get(protect, authorize('admin','agen'), getAllAgen)
     .post(protect, authorize('admin'), createAgen);
 
 // Rute untuk UPDATE dan DELETE agen berdasarkan ID
