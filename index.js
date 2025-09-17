@@ -15,6 +15,8 @@ const pegawaiRoutes = require('./routes/pegawaiRoutes');
 const arsipRoutes = require('./routes/arsipRoutes');
 const laporanRoutes = require('./routes/laporanRoutes'); 
 const kpiRoutes = require('./routes/kpiRoutes');
+const laporanHarianAgenRoutes = require('./routes/laporanHarianAgenRoutes');
+const laporanKunjunganRoutes = require('./routes/laporanKunjunganRoutes');
 
 dotenv.config();
 
@@ -40,6 +42,8 @@ app.use('/api/pegawai', pegawaiRoutes);
 app.use('/api/arsip', arsipRoutes);
 app.use('/api/laporan', laporanRoutes); 
 app.use('/api/kpi', kpiRoutes);
+app.use('/api/laporan-harian-agen', laporanHarianAgenRoutes);
+app.use('/api/laporan-kunjungan', laporanKunjunganRoutes);
 
 // Jalankan Server
 const PORT = process.env.PORT || 5000;
