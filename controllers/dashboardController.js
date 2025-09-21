@@ -154,3 +154,35 @@ exports.getUserChartData = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+exports.getAdminStats = async (req, res) => {
+    try {
+        // Query 1: Menghitung jumlah pegawai (Ini sudah benar)
+        const [totalPegawaiResult] = await pool.query("SELECT COUNT(*) as count FROM pegawai");
+        const totalPegawai = totalPegawaiResult[0].count;
+
+        // Query 2: Menghitung semua data cuti (karena tidak ada kolom status)
+        const [totalCutiResult] = await pool.query("SELECT COUNT(*) as count FROM cuti");
+        const totalCuti = totalCutiResult[0].count;
+
+        // Query 3: Menghitung jumlah user (Ini sudah benar)
+        const [totalUserResult] = await pool.query("SELECT COUNT(*) as count FROM users WHERE role IN ('user', 'agen')");
+        const totalUser = totalUserResult[0].count;
+
+        // Query 4: Menghitung jumlah dokumen dari tabel 'arsip_dokumen' (Nama tabel diperbaiki)
+        const [totalArsipResult] = await pool.query("SELECT COUNT(*) as count FROM arsip_dokumen");
+        const totalArsip = totalArsipResult[0].count;
+
+        res.json({
+            success: true,
+            data: {
+                totalPegawai,
+                totalCuti,
+                totalUser,
+                totalArsip
+            }
+        });
+    } catch (error) {
+        console.error("Gagal mengambil statistik admin:", error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
