@@ -103,21 +103,33 @@ exports.downloadDokumen = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.query('SELECT file_path, nama_dokumen FROM arsip_dokumen WHERE id = ?', [id]);
+
     if (rows.length === 0) {
-      return res.status(404).json({ message: 'Dokumen tidak ditemukan.' });
+      return res.status(404).json({ message: 'Dokumen tidak ditemukan di database.' });
     }
+
     const doc = rows[0];
-    const filePath = doc.file_path;
+    // Membuat path absolut dari root proyek ke file
+    const filePath = path.resolve(doc.file_path);
 
     if (fs.existsSync(filePath)) {
       const fileExtension = path.extname(doc.nama_dokumen) || path.extname(filePath);
-      const originalFilename = doc.nama_dokumen.endsWith(fileExtension) ? doc.nama_dokumen : `${doc.nama_dokumen}${fileExtension}`;
-      res.download(filePath, originalFilename);
+      const originalFilename = doc.nama_dokumen.endsWith(fileExtension)
+        ? doc.nama_dokumen
+        : `${doc.nama_dokumen}${fileExtension}`;
+      
+      // Menggunakan res.download dengan path absolut
+      res.download(filePath, originalFilename, (err) => {
+        if (err) {
+          console.error('Error saat mengirim file:', err);
+          res.status(500).send('Tidak dapat mengunduh file.');
+        }
+      });
     } else {
       res.status(404).send('File tidak ditemukan di server.');
     }
   } catch (error) {
-    console.error('Error saat download dokumen:', error);
+    console.error('Error pada controller download dokumen:', error);
     res.status(500).json({ message: 'Gagal mengunduh dokumen.' });
   }
 };

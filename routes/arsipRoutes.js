@@ -11,9 +11,8 @@ router.route('/')
 router.route('/upload')
     .post(protect, uploadDokumen); // Dihapus authorize agar semua role bisa upload
 
-router.route('/download/:fileName')
+router.route('/download/:id')
     .get(protect, downloadDokumen);
-
 router.route('/:id')
     .delete(protect, authorize('admin'), deleteDokumen);
 

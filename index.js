@@ -3,6 +3,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const path = require('path');
 const cookieParser = require('cookie-parser');
 require("dotenv").config();
 
@@ -32,7 +33,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Middleware untuk menyajikan file statis dari folder 'uploads'
-app.use('/uploads', express.static('uploads'));
+// Menjadikan folder 'uploads' sebagai folder statis
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Daftarkan semua rute API
 app.use('/api/auth', authRoutes);
