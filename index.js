@@ -26,7 +26,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: '*',
   credentials: true
 }));
 app.use(express.json());
@@ -48,6 +48,9 @@ app.use('/api/kpi', kpiRoutes);
 app.use('/api/laporan-harian-agen', laporanHarianAgenRoutes);
 app.use('/api/laporan-kunjungan', laporanKunjunganRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/hello', (req, res) => {
+    res.send('Hello World!');
+});
 
 // Jalankan Server
 const PORT = process.env.PORT || 5000;
