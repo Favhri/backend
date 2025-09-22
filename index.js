@@ -25,9 +25,13 @@ dotenv.config();
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+  'http://localhost:4173', 
+  'https://elangterbang.site'
+];
 app.use(cors({
-  origin: '*',
-  credentials: true
+  origin: allowedOrigins,
+  credentials: true, // penting biar cookie terkirim
 }));
 app.use(express.json());
 app.use(cookieParser());

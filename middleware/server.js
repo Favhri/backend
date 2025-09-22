@@ -4,10 +4,15 @@ const cookieParser = require("cookie-parser");
 
 const userRoutes = require("./src/routes/userRoutes");
 const authRoutes = require("./src/routes/authRoutes");
+const { all } = require("../routes/agenRoutes");
 
 const app = express();
+const allowedOrigins = [
+  'http://localhost:4173', 
+  'https://elangterbang.site'
+];
 app.use(cors({
-  origin: "*",
+  origin: allowedOrigins,
   credentials: true, // penting biar cookie terkirim
 }));
 app.use(express.json());
