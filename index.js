@@ -38,7 +38,7 @@ app.use(cookieParser());
 
 // Middleware untuk menyajikan file statis dari folder 'uploads'
 // Menjadikan folder 'uploads' sebagai folder statis
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Daftarkan semua rute API
 app.use('/api/auth', authRoutes);
