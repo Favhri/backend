@@ -66,10 +66,20 @@ exports.updatePegawai = async (req, res) => {
 // @desc    Menghapus data pegawai
 exports.deletePegawai = async (req, res) => {
     try {
-        const { id } = req.params;
-        await pool.query('DELETE FROM pegawai WHERE id_pegawai = ?', [id]);
+        // --- PERBAIKAN DI SINI ---
+        const { id } = req.params; // Ambil 'id' sesuai dengan nama di file routes
+        
+        // Cek jika ID tidak ada
+        if (!id) {
+            return res.status(400).json({ message: 'ID Pegawai tidak ditemukan' });
+        }
+
+        await pool.query('DELETE FROM pegawai WHERE id_pegawai = ?', [id]); // Gunakan 'id' di query
+        // ------------------------
+
         res.status(200).json({ success: true, message: 'Data pegawai berhasil dihapus' });
     } catch (error) {
+        console.error('Delete error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan pada server' });
     }
 };
