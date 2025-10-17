@@ -26,7 +26,7 @@ const app = express();
 
 // Middleware
 const allowedOrigins = [
-  'http://localhost:4173', 
+  'http://localhost:5173', 
   'https://elangterbang.site'
 ];
 app.use(cors({
